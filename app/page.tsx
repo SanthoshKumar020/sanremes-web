@@ -452,6 +452,25 @@ export default function Home() {
           ))}
         </nav>
 
+        <div className="px-3 pb-2">
+          <a
+            href="/auto-de"
+            className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-[#eceae5]"
+          >
+            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#57534e] text-[12px] font-bold text-white">
+              DE
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-semibold">
+                Auto-DE Studio
+              </span>
+              <span className="block truncate text-xs text-[#6f6d68]">
+                Clean &amp; transform CSVs
+              </span>
+            </span>
+          </a>
+        </div>
+
         <div className="border-t border-[#e6e3dd] px-4 py-3">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-[#6f6d68]">
             Groq API key

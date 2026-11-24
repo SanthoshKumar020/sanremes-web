@@ -55,6 +55,30 @@ it. A key sent with a request takes priority over the server's
 `GROQ_API_KEY`, which acts as a fallback. Get a free key at
 https://console.groq.com/keys (free tier, no card required).
 
+## Auto-DE Studio
+
+A separate page at `/auto-de` (linked from the chat sidebar). Upload a CSV or
+Excel file, describe what you need in plain English, review the plan the AI
+makes, approve it, and download the cleaned CSV.
+
+Flow: **1. Upload → 2. Requirements → 3. Plan → 4. Result.**
+
+- Files are parsed in the browser (papaparse for CSV, xlsx for Excel) and
+  **never uploaded** — only the column names, a few sample rows, and your
+  requirements are sent to the plan endpoint.
+- The AI only produces a JSON plan of steps. It never writes code that runs.
+- A deterministic engine (`lib/transform.ts`) executes the plan locally.
+  Supported operations (12): drop_duplicates, drop_missing, fill_missing,
+  trim, change_case, rename_column, drop_column, convert_type (number/date),
+  filter_rows, sort, group_aggregate, replace_values. Every step is validated
+  before it runs — an unknown operation, a missing column, or bad parameters
+  stops with a clear error naming the step.
+- The plan endpoint is `POST /api/auto-de/plan` — body
+  `{ columns, sampleRows (max 10), rowCount, requirements (max 4000 chars), apiKey? }`.
+  It uses the request's `apiKey` first (the browser-stored Groq key), else
+  the server's `GROQ_API_KEY`. The plan is validated server-side and dry-run
+  against the sample rows before it is returned.
+
 ## API
 
 - `GET /api/roles` — public role info only (id, name, tagline, description,
