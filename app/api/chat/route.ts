@@ -53,12 +53,19 @@ export async function POST(req: NextRequest) {
     .map((m) => ({ role: m.role, content: m.content.slice(0, 12000) }))
     .slice(-30);
 
-  const apiKey = process.env.GROQ_API_KEY;
+  // Bring-your-own-key: a key sent with the request (from the website's
+  // settings, stored only in the visitor's browser) wins over the server key.
+  // The key is never logged or stored server-side.
+  const bodyApiKey =
+    typeof (body as { apiKey?: unknown }).apiKey === "string"
+      ? ((body as { apiKey?: string }).apiKey as string).trim()
+      : "";
+  const apiKey = bodyApiKey || process.env.GROQ_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
       {
         error:
-          "The server API key is not configured. Set GROQ_API_KEY on the server to enable chat.",
+          "No API key is set. Add your free Groq API key in the website settings (sidebar), or set GROQ_API_KEY on the server.",
       },
       { status: 500 }
     );

@@ -20,6 +20,7 @@ interface ChatMessage {
 }
 
 const STORAGE_KEY = "sanremes-chats-v1";
+const KEY_STORAGE = "sanremes-groq-key";
 const DEFAULT_ROLE_ID = "data-engineer";
 
 function loadChats(): Record<string, ChatMessage[]> {
@@ -122,6 +123,9 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+  const [keyInput, setKeyInput] = useState("");
+  const [keyJustSaved, setKeyJustSaved] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -153,9 +157,14 @@ export default function Home() {
     };
   }, []);
 
-  // Load saved chats from localStorage after mount (avoids hydration mismatch).
+  // Load saved chats + API key from localStorage after mount (avoids hydration mismatch).
   useEffect(() => {
     setChats(loadChats());
+    try {
+      setApiKey(localStorage.getItem(KEY_STORAGE) ?? "");
+    } catch {
+      // Storage unavailable; chat falls back to the server key.
+    }
     setHydrated(true);
   }, []);
 
@@ -202,6 +211,30 @@ export default function Home() {
     setSidebarOpen(false);
   };
 
+  const saveApiKey = () => {
+    const value = keyInput.trim();
+    if (!value) return;
+    try {
+      localStorage.setItem(KEY_STORAGE, value);
+    } catch {
+      // Storage unavailable; keep the key for this session only.
+    }
+    setApiKey(value);
+    setKeyInput("");
+    setKeyJustSaved(true);
+    setTimeout(() => setKeyJustSaved(false), 2500);
+  };
+
+  const removeApiKey = () => {
+    try {
+      localStorage.removeItem(KEY_STORAGE);
+    } catch {
+      // Nothing to clean up.
+    }
+    setApiKey("");
+    setKeyJustSaved(false);
+  };
+
   const stopStreaming = () => {
     abortRef.current?.abort();
   };
@@ -230,6 +263,7 @@ export default function Home() {
           role: roleId,
           messages: nextHistory,
           stream: true,
+          ...(apiKey ? { apiKey } : {}),
         }),
         signal: controller.signal,
       });
@@ -294,7 +328,11 @@ export default function Home() {
       if ((err as Error).name === "AbortError") {
         // User stopped it; keep whatever arrived.
       } else {
-        const msg = err instanceof Error ? err.message : "Something went wrong.";
+        let msg = err instanceof Error ? err.message : "Something went wrong.";
+        if (msg.toLowerCase().includes("invalid api key")) {
+          msg =
+            "The server's API key is not working. Add your own free Groq key in the sidebar (it stays in your browser) and try again.";
+        }
         setChats((prev) => {
           const msgs = [...(prev[roleId] ?? [])];
           const last = msgs[msgs.length - 1];
@@ -413,6 +451,68 @@ export default function Home() {
             </button>
           ))}
         </nav>
+
+        <div className="border-t border-[#e6e3dd] px-4 py-3">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-[#6f6d68]">
+            Groq API key
+          </div>
+          {apiKey ? (
+            <div className="mt-2">
+              <p className="text-xs leading-relaxed text-[#6f6d68]">
+                <span className="inline-block h-2 w-2 rounded-full bg-green-600 align-middle" />{" "}
+                Key saved in this browser
+                <span className="font-mono"> (…{apiKey.slice(-4)})</span>
+              </p>
+              <button
+                type="button"
+                onClick={removeApiKey}
+                className="mt-2 rounded-full border border-[#e6e3dd] bg-white px-3 py-1.5 text-xs font-medium transition hover:bg-[#faf9f7]"
+              >
+                Remove key
+              </button>
+            </div>
+          ) : (
+            <div className="mt-2 flex gap-2">
+              <input
+                type="password"
+                value={keyInput}
+                onChange={(e) => setKeyInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") saveApiKey();
+                }}
+                placeholder="gsk_…"
+                aria-label="Groq API key"
+                className="min-w-0 flex-1 rounded-lg border border-[#e6e3dd] bg-white px-3 py-2 font-mono text-xs outline-none placeholder:text-[#9a978f] focus:ring-2 focus:ring-[#1f1e1c]/10"
+              />
+              <button
+                type="button"
+                onClick={saveApiKey}
+                disabled={!keyInput.trim()}
+                className="shrink-0 rounded-lg bg-[#1f1e1c] px-3 py-2 text-xs font-medium text-white transition hover:bg-black disabled:opacity-30"
+              >
+                Save
+              </button>
+            </div>
+          )}
+          {keyJustSaved && (
+            <p className="mt-2 text-xs font-medium text-green-700">
+              Key saved. You can chat now.
+            </p>
+          )}
+          <p className="mt-2 text-[11px] leading-relaxed text-[#9a978f]">
+            Your key stays in this browser only — it is sent with each chat
+            request and never stored on the server. Get a free key at{" "}
+            <a
+              href="https://console.groq.com/keys"
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              console.groq.com
+            </a>
+            .
+          </p>
+        </div>
 
         <div className="border-t border-[#e6e3dd] px-4 py-3 text-[11px] leading-relaxed text-[#6f6d68]">
           Pick a role, then chat. Each role keeps its own conversation on this

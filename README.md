@@ -46,12 +46,24 @@ npm run dev
 
 Open http://localhost:3000.
 
+## Bring your own key (no server key needed)
+
+Visitors can add their own free Groq API key in the website itself — in the
+sidebar, under **Groq API key**. The key is stored only in that browser's
+localStorage and sent with each chat request; the server never stores or logs
+it. A key sent with a request takes priority over the server's
+`GROQ_API_KEY`, which acts as a fallback. Get a free key at
+https://console.groq.com/keys (free tier, no card required).
+
 ## API
 
 - `GET /api/roles` — public role info only (id, name, tagline, description,
   initials, color, suggestions). System prompts are never exposed.
 - `POST /api/chat` — body
-  `{ role: string, messages: [{ role: "user" | "assistant", content: string }], stream?: boolean }`.
+  `{ role: string, messages: [{ role: "user" | "assistant", content: string }], stream?: boolean, apiKey?: string }`.
+  An `apiKey` sent with the request (the visitor's own Groq key) is used
+  first; otherwise the server's `GROQ_API_KEY` is used. The key is never
+  logged or stored.
   Streams Server-Sent Events by default (`data: {"content": "..."}` lines,
   ending with `data: [DONE]`). With `stream: false` it returns JSON
   `{ reply: string }`. Unknown role → 400. Missing server key → clean 500.
