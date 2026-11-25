@@ -79,6 +79,41 @@ Flow: **1. Upload → 2. Requirements → 3. Plan → 4. Result.**
   the server's `GROQ_API_KEY`. The plan is validated server-side and dry-run
   against the sample rows before it is returned.
 
+## Website Builder (Phase 1 of the Autonomous AI Company OS)
+
+A separate page at `/build` (linked from the chat sidebar). Describe a
+website in plain English and get a working site: **brief → Developer builds
+→ deterministic tests → QA reviews → up to 3 fix rounds → preview → you
+approve → live link on Vercel.** Nothing goes live without your approval.
+
+- The pipeline is a fixed workflow in code (`POST /api/build`), not
+  free-form agent chat. The Developer step uses the Full-Stack Developer
+  role prompt and the QA step uses the QA/Testing role prompt, both from
+  `lib/roles.ts`. The LLM only writes static files (`.html`, `.css`, `.js`);
+  nothing generated is executed server-side.
+- The deterministic test gate (`lib/build.ts`) checks, with no LLM: valid
+  HTML structure, a non-empty `<title>`, a viewport meta tag, no lorem
+  ipsum / TODO / filler text, every internal link and asset reference
+  resolving inside the file set (including `#anchor` targets), and every
+  section from the brief actually present.
+- Cost is estimated per Groq call (characters / 4 tokens) at the
+  gpt-oss-120b list rates ($0.15 / $0.60 per 1M input / output tokens) and
+  shown live. A per-task cost cap (default $0.50, adjustable up to $2)
+  stops the loop immediately when hit. After 3 fix rounds the build stops
+  and returns the best version as "escalated" — it never loops forever.
+- Preview renders the site in a sandboxed iframe (`sandbox="allow-scripts"`,
+  no same-origin). Download as a `.zip` (or a single HTML file for
+  single-file sites).
+- `POST /api/build/deploy` deploys the approved files to Vercel via the
+  Vercel REST API using a token the user pastes in the form. The token is
+  stored only in the user's browser and sent only to Vercel — never stored
+  or logged server-side. Without a token, preview and download still work;
+  a live link needs the token.
+- Known limit: no Playwright smoke test yet (the report's acceptance bar
+  wants one). The gate is static checks only — it cannot catch runtime
+  console errors or visual breakage. A headless-browser check is the next
+  step for Phase 1 hardening.
+
 ## API
 
 - `GET /api/roles` — public role info only (id, name, tagline, description,

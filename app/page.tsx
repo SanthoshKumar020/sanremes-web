@@ -469,6 +469,22 @@ export default function Home() {
               </span>
             </span>
           </a>
+          <a
+            href="/build"
+            className="flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-[#eceae5]"
+          >
+            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0369a1] text-[12px] font-bold text-white">
+              WB
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-semibold">
+                Website Builder
+              </span>
+              <span className="block truncate text-xs text-[#6f6d68]">
+                Brief → build → test → live link
+              </span>
+            </span>
+          </a>
         </div>
 
         <div className="border-t border-[#e6e3dd] px-4 py-3">
